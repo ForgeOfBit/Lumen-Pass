@@ -7,6 +7,8 @@ export interface GeneratorOptions {
   lower: boolean;
   nums: boolean;
   syms: boolean;
+  minNums?: number;
+  minSyms?: number;
 }
 
 export const DEFAULT_GEN_OPTIONS: GeneratorOptions = {
@@ -15,10 +17,12 @@ export const DEFAULT_GEN_OPTIONS: GeneratorOptions = {
   lower: true,
   nums: true,
   syms: true,
+  minNums: 1,
+  minSyms: 1,
 };
 
 export function generateSecurePassword(opts: GeneratorOptions): string {
-  const { length, upper, lower, nums, syms } = opts;
+  const { length, upper, lower, nums, syms, minNums = 1, minSyms = 1 } = opts;
   const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const LOWER = 'abcdefghijklmnopqrstuvwxyz';
   const NUMS  = '0123456789';
@@ -34,11 +38,18 @@ export function generateSecurePassword(opts: GeneratorOptions): string {
 
   if (upper) { pool += UPPER; required.push(pick(UPPER)); }
   if (lower) { pool += LOWER; required.push(pick(LOWER)); }
-  if (nums)  { pool += NUMS;  required.push(pick(NUMS)); }
-  if (syms)  { pool += SYMS;  required.push(pick(SYMS)); }
+  if (nums)  { 
+    pool += NUMS;  
+    for (let k = 0; k < minNums; k++) required.push(pick(NUMS)); 
+  }
+  if (syms)  { 
+    pool += SYMS;  
+    for (let k = 0; k < minSyms; k++) required.push(pick(SYMS)); 
+  }
   if (!pool) return '';
 
-  const remaining = length - required.length;
+  const actualLength = Math.max(length, required.length);
+  const remaining = actualLength - required.length;
   const buf = crypto.getRandomValues(new Uint32Array(Math.max(remaining, 0)));
   const chars = [...required, ...Array.from(buf, n => pool[n % pool.length])];
 

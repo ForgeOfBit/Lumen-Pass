@@ -2,16 +2,17 @@ import { useState } from 'react';
 import {
   Pencil, Trash2, ShieldAlert, Copy, Eye, EyeOff,
   KeySquare, CreditCard, FileText, ShieldCheck, Fingerprint,
-  Link2
+  Link2, AlertTriangle
 } from 'lucide-react';
 import type { VaultItem, ItemType } from '../hooks/useVault';
 import { algName, transportLabel } from '../utils/webauthn';
 import { CreditCardWidget } from './CreditCardWidget';
+import { TotpWidget } from './TotpWidget';
 
 interface Props {
   item: VaultItem | null;
   allItems: VaultItem[];
-  onDelete: (id: string) => void;
+  onDeleteRequest: (item: VaultItem) => void;
   onEdit: (item: VaultItem) => void;
 }
 
@@ -75,7 +76,7 @@ function FieldRow({ label, value, mono = false, secret = false, copyable = true 
 }
 
 
-export function DetailPane({ item, allItems, onDelete, onEdit }: Props) {
+export function DetailPane({ item, allItems, onDeleteRequest, onEdit }: Props) {
   if (!item) {
     return (
       <main className="detail-pane">
@@ -92,9 +93,7 @@ export function DetailPane({ item, allItems, onDelete, onEdit }: Props) {
     );
   }
 
-  const handleDelete = () => {
-    if (window.confirm(`"${item.title}" öğesini silmek istiyor musunuz?`)) onDelete(item.id);
-  };
+  const handleDelete = () => onDeleteRequest(item);
 
   return (
     <main className="detail-pane">
@@ -137,22 +136,61 @@ export function DetailPane({ item, allItems, onDelete, onEdit }: Props) {
             </div>
             {item.username && <FieldRow label="Kullanıcı Adı / E-posta" value={item.username} />}
             {item.password && <FieldRow label="Şifre" value={item.password} mono secret />}
-            {item.url && (
-              <div className="field-group">
-                <div className="field-label">Web Sitesi</div>
-                <div className="field-value-row">
-                  <a
-                    href={item.url} target="_blank" rel="noreferrer"
-                    style={{ color: 'var(--apple-blue)', fontSize: '14px', textDecoration: 'none' }}
-                  >
-                    {item.url}
-                  </a>
-                  <div className="field-value-actions">
-                    <CopyButton value={item.url} />
+            {(() => {
+              const urlsToRender = item.urls?.filter(Boolean) || (item.url ? [item.url] : []);
+              if (urlsToRender.length === 0) return null;
+              
+              return (
+                <div className="field-group">
+                  <div className="field-label">Web Siteleri</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {urlsToRender.map((u, idx) => {
+                      const isHttp = u.startsWith('http://');
+                      const href = (u.startsWith('http://') || u.startsWith('https://')) ? u : `https://${u}`;
+                      const displayUrl = u.replace(/^https?:\/\//, '');
+
+                      return (
+                        <div key={idx} className="field-value-row" style={{ padding: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                            {isHttp && (
+                              <div title="Güvenli değil (HTTP)" style={{ display: 'flex', alignItems: 'center', color: 'var(--apple-orange)', flexShrink: 0 }}>
+                                <AlertTriangle size={13} strokeWidth={2.5} />
+                              </div>
+                            )}
+                            <a
+                              href={href} target="_blank" rel="noreferrer"
+                              style={{ color: 'var(--apple-blue)', fontSize: '14px', textDecoration: 'none', wordBreak: 'break-all' }}
+                            >
+                              {displayUrl}
+                            </a>
+                          </div>
+                          <div className="field-value-actions">
+                            <CopyButton value={displayUrl} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+            
+            {/* Linked TOTP display underneath the Login item */}
+            {(() => {
+              const linkedTotp = allItems.find(i => i.type === 'totp' && i.linkedAccountId === item.id);
+              if (linkedTotp && linkedTotp.totpSecret) {
+                return (
+                  <div className="detail-card" style={{ marginTop: '16px' }}>
+                    <div className="detail-card-header">
+                      <ShieldCheck size={13} strokeWidth={2} style={{ color: 'var(--c-totp)' }} />
+                      <span className="detail-card-title">İlişkili TOTP Kodu</span>
+                    </div>
+                    <TotpWidget secret={linkedTotp.totpSecret} />
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
 
@@ -208,9 +246,9 @@ export function DetailPane({ item, allItems, onDelete, onEdit }: Props) {
               <ShieldCheck size={13} strokeWidth={2} style={{ color: 'var(--c-totp)' }} />
               <span className="detail-card-title">TOTP Kodu</span>
             </div>
-            <div className="totp-widget">
-              <div className="totp-code">------</div>
-            </div>
+            
+            {item.totpSecret && <TotpWidget secret={item.totpSecret} />}
+
             {item.issuer && <FieldRow label="Hizmet" value={item.issuer} copyable={false} />}
             {item.linkedAccountId && (() => {
               const linked = allItems.find(i => i.id === item.linkedAccountId);

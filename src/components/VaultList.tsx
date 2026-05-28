@@ -10,6 +10,7 @@ interface Props {
   setSelectedItem: (item: VaultItem) => void;
   onAddItem: () => void;
   onGeneratePassword: () => void;
+  onItemContextMenu: (e: React.MouseEvent, item: VaultItem) => void;
 }
 
 const TypeIcon = ({ type }: { type: ItemType }) => {
@@ -35,7 +36,7 @@ const categoryLabels: Record<ItemType | 'all', string> = {
 
 export function VaultList({
   items, activeCategory, searchQuery, setSearchQuery,
-  selectedItem, setSelectedItem, onAddItem, onGeneratePassword
+  selectedItem, setSelectedItem, onAddItem, onGeneratePassword, onItemContextMenu
 }: Props) {
   const filtered = items.filter(item => {
     const matchCat = activeCategory === 'all' || item.type === activeCategory;
@@ -100,6 +101,7 @@ export function VaultList({
               key={item.id}
               className={`vault-item type-${item.type} ${selectedItem?.id === item.id ? 'selected' : ''}`}
               onClick={() => setSelectedItem(item)}
+              onContextMenu={(e) => onItemContextMenu(e, item)}
             >
               <div className="item-icon">
                 <TypeIcon type={item.type} />

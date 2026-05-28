@@ -11,6 +11,7 @@ export interface VaultItem {
   username?: string;
   password?: string;
   url?: string;
+  urls?: string[];
   // Card fields
   cardHolder?: string;
   cardNumber?: string;

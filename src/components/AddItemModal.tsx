@@ -7,6 +7,7 @@ import type { VaultItem, ItemType } from '../hooks/useVault';
 import { generateSecurePassword, checkPasswordStrength, DEFAULT_GEN_OPTIONS } from '../utils/generator';
 import { detectCardBrand, BRAND_META, formatCardNumber } from '../utils/cardBrands';
 import { registerPasskey, algName, transportLabel } from '../utils/webauthn';
+import { CustomSelect } from './CustomSelect';
 
 /* ─── Item type config ───────────────────────────────────── */
 const ITEM_TYPES: { id: ItemType; label: string; icon: typeof KeySquare; color: string }[] = [
@@ -92,18 +93,48 @@ function PasswordInput({ value, onChange }: { value: string; onChange: (v: strin
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>Uzunluk</span>
-            <input type="range" min={8} max={64} value={genOpts.length}
+            <input type="range" min={8} max={512} value={genOpts.length}
               onChange={e => setGenOpts(o => ({ ...o, length: +e.target.value }))}
               style={{ flex: 1, accentColor: 'var(--apple-blue)', height: '3px' }} />
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', width: '24px', textAlign: 'right' }}>{genOpts.length}</span>
+            <input type="number" min={8} max={512} value={genOpts.length} 
+              onChange={e => setGenOpts(o => ({ ...o, length: +e.target.value }))}
+              style={{ width: '48px', padding: '4px', fontSize: '12px', fontWeight: 600, color: 'white', textAlign: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', outline: 'none' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-            {(['upper','lower','nums','syms'] as const).map((k, i) => (
-              <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
-                <input type="checkbox" checked={genOpts[k]} onChange={e => setGenOpts(o => ({ ...o, [k]: e.target.checked }))} style={{ width: 'auto', accentColor: 'var(--apple-blue)' }} />
-                {['A–Z','a–z','0–9','!@#'][i]}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={genOpts.upper} onChange={e => setGenOpts(o => ({ ...o, upper: e.target.checked }))} style={{ width: 'auto', accentColor: 'var(--apple-blue)' }} />
+              A–Z
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={genOpts.lower} onChange={e => setGenOpts(o => ({ ...o, lower: e.target.checked }))} style={{ width: 'auto', accentColor: 'var(--apple-blue)' }} />
+              a–z
+            </label>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={genOpts.nums} onChange={e => setGenOpts(o => ({ ...o, nums: e.target.checked }))} style={{ width: 'auto', accentColor: 'var(--apple-blue)' }} />
+                0–9
               </label>
-            ))}
+              {genOpts.nums && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>En az:</span>
+                  <input type="number" min={1} max={512} value={genOpts.minNums || 1} onChange={e => setGenOpts(o => ({ ...o, minNums: +e.target.value }))} style={{ width: '42px', padding: '3px 4px', fontSize: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', textAlign: 'center', outline: 'none' }} />
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={genOpts.syms} onChange={e => setGenOpts(o => ({ ...o, syms: e.target.checked }))} style={{ width: 'auto', accentColor: 'var(--apple-blue)' }} />
+                !@#
+              </label>
+              {genOpts.syms && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>En az:</span>
+                  <input type="number" min={1} max={512} value={genOpts.minSyms || 1} onChange={e => setGenOpts(o => ({ ...o, minSyms: +e.target.value }))} style={{ width: '42px', padding: '3px 4px', fontSize: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', textAlign: 'center', outline: 'none' }} />
+                </div>
+              )}
+            </div>
           </div>
           <button type="button" onClick={() => { onChange(generated); setGenOpen(false); }}
             style={{ background: 'var(--apple-blue)', color: '#fff', border: 'none', borderRadius: 'var(--r-sm)', padding: '8px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
@@ -138,6 +169,24 @@ function TypePicker({ value, onChange }: { value: ItemType; onChange: (t: ItemTy
 
 /* ─── Login fields ───────────────────────────────────────── */
 function LoginFields({ data, setData }: { data: Partial<VaultItem>; setData: (d: Partial<VaultItem>) => void }) {
+  const urls = data.urls || (data.url ? [data.url] : ['']);
+
+  const updateUrl = (index: number, val: string) => {
+    const newUrls = [...urls];
+    newUrls[index] = val;
+    setData({ ...data, urls: newUrls, url: newUrls[0] || undefined });
+  };
+
+  const addUrl = () => {
+    setData({ ...data, urls: [...urls, ''] });
+  };
+
+  const removeUrl = (index: number) => {
+    const newUrls = urls.filter((_, i) => i !== index);
+    if (newUrls.length === 0) newUrls.push('');
+    setData({ ...data, urls: newUrls, url: newUrls[0] || undefined });
+  };
+
   return (
     <>
       <FormField label="Kullanıcı Adı / E-posta">
@@ -146,8 +195,22 @@ function LoginFields({ data, setData }: { data: Partial<VaultItem>; setData: (d:
       <FormField label="Şifre">
         <PasswordInput value={data.password ?? ''} onChange={v => setData({ ...data, password: v })} />
       </FormField>
-      <FormField label="Web Sitesi (isteğe bağlı)">
-        <input type="url" placeholder="https://example.com" value={data.url ?? ''} onChange={e => setData({ ...data, url: e.target.value })} />
+      <FormField label="Web Siteleri (isteğe bağlı)">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {urls.map((u, i) => (
+            <div key={i} style={{ display: 'flex', gap: '6px' }}>
+              <input type="text" placeholder="example.com" value={u} onChange={e => updateUrl(i, e.target.value)} style={{ flex: 1 }} />
+              {urls.length > 1 && (
+                <button type="button" onClick={() => removeUrl(i)} className="btn-icon" style={{ flexShrink: 0, color: 'var(--apple-red)' }}>
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={addUrl} style={{ background: 'transparent', border: '1px dashed var(--border-default)', color: 'var(--text-secondary)', padding: '8px', borderRadius: 'var(--r-sm)', fontSize: '12px', cursor: 'pointer', transition: 'all 150ms' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text-secondary)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}>
+            + Yeni Site Ekle
+          </button>
+        </div>
       </FormField>
     </>
   );
@@ -233,18 +296,16 @@ function TotpFields({ data, setData, loginItems }: { data: Partial<VaultItem>; s
       </FormField>
       {/* Account linking */}
       <FormField label="Bağlı Hesap (isteğe bağlı)">
-        <select
+        <CustomSelect
           value={data.linkedAccountId ?? ''}
-          onChange={e => setData({ ...data, linkedAccountId: e.target.value || undefined })}
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-default)', color: data.linkedAccountId ? 'var(--text-primary)' : 'var(--text-tertiary)', borderRadius: 'var(--r-sm)', padding: '10px 12px' }}
-        >
-          <option value="">— Hesaba bağlama —</option>
-          {loginItems.map(item => (
-            <option key={item.id} value={item.id} style={{ background: '#1c1c1e', color: 'white' }}>
-              {item.title}{item.username ? ` (${item.username})` : ''}
-            </option>
-          ))}
-        </select>
+          onChange={val => setData({ ...data, linkedAccountId: val || undefined })}
+          options={loginItems.map(item => ({
+            value: item.id,
+            label: item.title,
+            subLabel: item.username ? `(${item.username})` : undefined
+          }))}
+          placeholder="— Hesaba bağlama —"
+        />
       </FormField>
     </>
   );
