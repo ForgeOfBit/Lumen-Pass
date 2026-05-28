@@ -51,7 +51,7 @@ export function VaultList({
     if (item.type === 'card')    return item.cardNumber ? `•••• ${item.cardNumber.replace(/\s/g,'').slice(-4)}` : '–';
     if (item.type === 'note')    return item.noteContent ? item.noteContent.slice(0, 26) + '…' : '–';
     if (item.type === 'totp')    return item.issuer || 'Kimlik Doğrulayıcı';
-    if (item.type === 'passkey') return item.rpDomain || 'Yerel Anahtar';
+    if (item.type === 'passkey') return item.rpId || 'Yerel Anahtar';
     return '';
   };
 

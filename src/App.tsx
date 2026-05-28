@@ -75,6 +75,7 @@ export default function App() {
 
       <DetailPane
         item={selectedItem}
+        allItems={vault.vaultItems}
         onDelete={handleDelete}
         onEdit={openEditModal}
       />
@@ -83,6 +84,7 @@ export default function App() {
         open={modalOpen}
         editItem={editTarget}
         defaultType={defaultType}
+        loginItems={vault.vaultItems.filter(i => i.type === 'login')}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />

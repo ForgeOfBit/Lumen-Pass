@@ -13,7 +13,7 @@ const navItems = [
   { id: 'login'   as const, icon: KeySquare,   label: 'Şifreler'   },
   { id: 'card'    as const, icon: CreditCard,  label: 'Kartlar'    },
   { id: 'note'    as const, icon: FileText,    label: 'Notlar'     },
-  { id: 'totp'    as const, icon: ShieldCheck, label: '2FA / TOTP' },
+  { id: 'totp'    as const, icon: ShieldCheck, label: 'TOTP'                  },
   { id: 'passkey' as const, icon: Fingerprint, label: 'Geçiş Anahtarları' },
 ];
 

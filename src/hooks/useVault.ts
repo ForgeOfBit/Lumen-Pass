@@ -7,18 +7,30 @@ export interface VaultItem {
   id: string;
   type: ItemType;
   title: string;
+  // Login fields
   username?: string;
   password?: string;
   url?: string;
+  // Card fields
   cardHolder?: string;
   cardNumber?: string;
   cardExpiry?: string;
   cardCvv?: string;
+  // Note fields
   noteContent?: string;
+  // TOTP fields
   issuer?: string;
   totpSecret?: string;
-  rpDomain?: string;
-  usernameId?: string;
+  linkedAccountId?: string; // links to a login item's id
+  // Passkey fields (WebAuthn)
+  rpId?: string;
+  rpName?: string;
+  passkeyUsername?: string;
+  credentialId?: string;    // base64url encoded credential ID
+  userHandle?: string;      // base64url encoded user handle
+  publicKeyAlgorithm?: number; // -7 ES256, -257 RS256
+  transports?: string[];
+  createdAt?: string;
 }
 
 export function useVault() {

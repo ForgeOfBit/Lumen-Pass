@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import {
   Pencil, Trash2, ShieldAlert, Copy, Eye, EyeOff,
-  KeySquare, CreditCard, FileText, ShieldCheck, Fingerprint
+  KeySquare, CreditCard, FileText, ShieldCheck, Fingerprint,
+  Link2
 } from 'lucide-react';
 import type { VaultItem, ItemType } from '../hooks/useVault';
+import { algName, transportLabel } from '../utils/webauthn';
+import { CreditCardWidget } from './CreditCardWidget';
 
 interface Props {
   item: VaultItem | null;
+  allItems: VaultItem[];
   onDelete: (id: string) => void;
   onEdit: (item: VaultItem) => void;
 }
@@ -22,7 +26,7 @@ const typeColorClass: Record<ItemType, string> = {
 };
 
 const badgeLabel: Record<ItemType, string> = {
-  login: 'Şifre', card: 'Kart', note: 'Not', totp: '2FA / TOTP', passkey: 'Geçiş Anahtarı'
+  login: 'Şifre', card: 'Kart', note: 'Not', totp: 'TOTP', passkey: 'Passkey'
 };
 
 function CopyButton({ value, label = 'Kopyala' }: { value: string; label?: string }) {
@@ -70,36 +74,8 @@ function FieldRow({ label, value, mono = false, secret = false, copyable = true 
   );
 }
 
-function CreditCardWidget({ item }: { item: VaultItem }) {
-  const raw = (item.cardNumber ?? '').replace(/\s/g, '');
-  const formatted = raw.replace(/(.{4})/g, '$1 ').trim() || '•••• •••• •••• ••••';
-  const isVisa = raw.startsWith('4');
-  const isMC   = raw.startsWith('5');
-  const cardClass = isVisa ? 'visa' : isMC ? 'mastercard' : 'generic';
-  const brand = isVisa ? 'VISA' : isMC ? 'MASTERCARD' : 'CARD';
 
-  return (
-    <div className={`cc-card ${cardClass}`}>
-      <div className="cc-top">
-        <div className="cc-chip" />
-        <div className="cc-brand-logo">{brand}</div>
-      </div>
-      <div className="cc-number">{formatted}</div>
-      <div className="cc-bottom">
-        <div className="cc-info">
-          <div className="cc-info-label">Kart Sahibi</div>
-          <div className="cc-info-value">{item.cardHolder || 'LUMEN USER'}</div>
-        </div>
-        <div className="cc-info" style={{ textAlign: 'right' }}>
-          <div className="cc-info-label">Son Kullanma</div>
-          <div className="cc-info-value">{item.cardExpiry || '00/00'}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function DetailPane({ item, onDelete, onEdit }: Props) {
+export function DetailPane({ item, allItems, onDelete, onEdit }: Props) {
   if (!item) {
     return (
       <main className="detail-pane">
@@ -225,28 +201,50 @@ export function DetailPane({ item, onDelete, onEdit }: Props) {
           </div>
         )}
 
-        {/* TOTP placeholder */}
+        {/* TOTP */}
         {item.type === 'totp' && (
           <div className="detail-card">
             <div className="detail-card-header">
               <ShieldCheck size={13} strokeWidth={2} style={{ color: 'var(--c-totp)' }} />
-              <span className="detail-card-title">Kimlik Doğrulama Kodu</span>
+              <span className="detail-card-title">TOTP Kodu</span>
             </div>
             <div className="totp-widget">
               <div className="totp-code">------</div>
             </div>
+            {item.issuer && <FieldRow label="Hizmet" value={item.issuer} copyable={false} />}
+            {item.linkedAccountId && (() => {
+              const linked = allItems.find(i => i.id === item.linkedAccountId);
+              return linked ? (
+                <div className="field-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link2 size={12} style={{ color: 'var(--c-totp)', flexShrink: 0 }} />
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Bağlı hesap: <strong style={{ color: 'var(--text-primary)' }}>{linked.title}</strong>
+                    {linked.username && <span style={{ color: 'var(--text-tertiary)' }}> · {linked.username}</span>}
+                  </span>
+                </div>
+              ) : null;
+            })()}
           </div>
         )}
 
-        {/* Passkey placeholder */}
+        {/* Passkey */}
         {item.type === 'passkey' && (
           <div className="detail-card">
             <div className="detail-card-header">
               <Fingerprint size={13} strokeWidth={2} style={{ color: 'var(--c-passkey)' }} />
-              <span className="detail-card-title">Geçiş Anahtarı</span>
+              <span className="detail-card-title">Passkey (WebAuthn)</span>
             </div>
-            {item.rpDomain   && <FieldRow label="Alan Adı" value={item.rpDomain} />}
-            {item.usernameId && <FieldRow label="Kullanıcı" value={item.usernameId} />}
+            {item.rpId           && <FieldRow label="Alan Adı" value={item.rpId} />}
+            {item.passkeyUsername && <FieldRow label="Kullanıcı" value={item.passkeyUsername} />}
+            {item.publicKeyAlgorithm !== undefined && (
+              <FieldRow label="Algoritma" value={algName(item.publicKeyAlgorithm)} copyable={false} />
+            )}
+            {item.transports?.length ? (
+              <FieldRow label="Doğrulayıcı" value={item.transports.map(transportLabel).join(', ')} copyable={false} />
+            ) : null}
+            {item.createdAt && (
+              <FieldRow label="Oluşturuldu" value={new Date(item.createdAt).toLocaleString('tr-TR')} copyable={false} />
+            )}
           </div>
         )}
       </div>
